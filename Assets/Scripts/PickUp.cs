@@ -99,9 +99,6 @@ public class PickUp : MonoBehaviour
     {
         if (isHolding)
         {
-            transform.position = tempParent.transform.position;
-            transform.rotation = tempParent.transform.rotation;
-
             holdVelocity = (transform.position - lastHeldPosition) / Time.deltaTime;
             holdVelocity = Vector3.ClampMagnitude(holdVelocity, maxThrowVelocity);
 
