@@ -6,7 +6,8 @@ using UnityEngine.AI;
 public enum EnemyState
 {
     Patrolling,
-    Following
+    Following,
+    Attacking
 }
 
 public class EnemyController : MonoBehaviour
@@ -21,6 +22,8 @@ public class EnemyController : MonoBehaviour
     [SerializeField] private float detectionRange = 5f;
     [SerializeField] private float viewAngle = 90f;
     [SerializeField] private float losePlayerTime = 3f;
+    [SerializeField] private float attackRange = 1.2f;
+    [SerializeField] private float attackCooldown = 2f;
 
     private NavMeshAgent _agent;
     // private Animator _animator;
@@ -28,6 +31,7 @@ public class EnemyController : MonoBehaviour
     private int _currentPatrolIndex;
     private bool _isWaiting;
     private float _timeSinceLostPlayer;
+    private bool _isAttacking;
     private Coroutine _patrolWaitCoroutine;
 
     private void Awake()
@@ -49,7 +53,7 @@ public class EnemyController : MonoBehaviour
         {
             case EnemyState.Patrolling:
                 Patrol();
-                if (distanceToPlayer <= detectionRange && CanSeePlayer())
+                    if (distanceToPlayer <= detectionRange && CanSeePlayer())
                 {
                     StopPatrolWaiting();
 
@@ -61,6 +65,11 @@ public class EnemyController : MonoBehaviour
 
             case EnemyState.Following:
                 FollowPlayer();
+                if (distanceToPlayer <= attackRange)
+                {
+                    _state = EnemyState.Attacking;
+                    StartAttack();
+                }
                 if (!CanSeePlayer())
                 {
                     _timeSinceLostPlayer += Time.deltaTime;
@@ -76,9 +85,58 @@ public class EnemyController : MonoBehaviour
                 }
 
                 break;
+
+            case EnemyState.Attacking:
+                if (!_isAttacking)
+                {
+                    if (distanceToPlayer > attackRange)
+                    {
+                        _state = EnemyState.Following;
+                        _agent.isStopped = false;
+                    }
+                    else
+                    {
+                        Attack();
+                        StartCoroutine(AttackWait());
+                    }
+                }
+
+                break;
         }
 
         UpdateAnimations();
+    }
+
+    private void StartAttack()
+    {
+        _agent.isStopped = true;
+    }
+
+    private void Attack()
+    {
+        _agent.isStopped = true;
+        var direction = (player.position - transform.position).normalized;
+        direction.y = 0f;
+        if (direction != Vector3.zero)
+        {
+            transform.rotation = Quaternion.LookRotation(direction);
+        }
+    }
+
+    // If not using animator
+    private IEnumerator AttackWait()
+    {
+        _isAttacking = true;
+
+        yield return new WaitForSeconds(attackCooldown);
+
+        _isAttacking = false;
+    }
+
+    // If using animator
+    private void OnAttackAnimationEnd()
+    {
+        _isAttacking = false;
     }
 
     private void FollowPlayer()

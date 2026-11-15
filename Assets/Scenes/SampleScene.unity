@@ -834,10 +834,12 @@ MonoBehaviour:
   - {fileID: 170308214}
   - {fileID: 1126641109}
   patrolWaitTime: 2
-  stopAtDistance: 0.5
+  stopAtDistance: 0.75
   detectionRange: 5
   viewAngle: 180
   losePlayerTime: 3
+  attackRange: 1.53
+  attackCooldown: 2
 --- !u!1 &1704666868
 GameObject:
   m_ObjectHideFlags: 0
