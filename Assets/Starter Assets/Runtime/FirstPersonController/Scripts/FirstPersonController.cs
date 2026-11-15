@@ -51,8 +51,12 @@ namespace StarterAssets
 		[Tooltip("How far in degrees can you move the camera down")]
 		public float BottomClamp = -90.0f;
 
-		// cinemachine
-		private float _cinemachineTargetPitch;
+        [Header("Look Sensitivity")]
+        public float MouseSensitivity = 1.0f;
+        public float ControllerSensitivity = 150.0f;
+
+        // cinemachine
+        private float _cinemachineTargetPitch;
 
 		// player
 		private float _speed;
@@ -134,14 +138,20 @@ namespace StarterAssets
 			// if there is an input
 			if (_input.look.sqrMagnitude >= _threshold)
 			{
-				//Don't multiply mouse input by Time.deltaTime
-				float deltaTimeMultiplier = _input.lookFromTouch ? Time.deltaTime : 1.0f;
+                //Don't multiply mouse input by Time.deltaTime
+                float sensitivity = IsCurrentDeviceMouse
+					? MouseSensitivity
+					: ControllerSensitivity;
 
-                _cinemachineTargetPitch += _input.look.y * RotationSpeed * deltaTimeMultiplier;
-				_rotationVelocity = _input.look.x * RotationSpeed * deltaTimeMultiplier;
+                float deltaTimeMultiplier = IsCurrentDeviceMouse
+                    ? 1.0f
+                    : Time.deltaTime;
 
-				// clamp our pitch rotation
-				_cinemachineTargetPitch = ClampAngle(_cinemachineTargetPitch, BottomClamp, TopClamp);
+                _cinemachineTargetPitch += _input.look.y * sensitivity * deltaTimeMultiplier;
+                _rotationVelocity = _input.look.x * sensitivity * deltaTimeMultiplier;
+
+                // clamp our pitch rotation
+                _cinemachineTargetPitch = ClampAngle(_cinemachineTargetPitch, BottomClamp, TopClamp);
 
 				// Update Cinemachine camera target pitch
 				CinemachineCameraTarget.transform.localRotation = Quaternion.Euler(_cinemachineTargetPitch, 0.0f, 0.0f);

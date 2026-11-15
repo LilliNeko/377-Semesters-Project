@@ -1,108 +1,109 @@
+
 using UnityEngine;
 
 public class PickUp : MonoBehaviour
 {
-    [SerializeField] float velocityMultiplier = 1.0f;
-    bool isHolding = false;
-    [SerializeField]
-    float throwForce = 600f;
-    [SerializeField]
-    float maxThrowVelocity = 8f;
-    [SerializeField]
-    float maxDistance = 3f;
-    float distance;
-    Vector3 lastHeldPosition;
-    Vector3 holdVelocity;
+    [SerializeField] float velocityMultiplier = 1f;
+    [SerializeField] float throwForce = 6f;
+    [SerializeField] float maxThrowVelocity = 8f;
+    [SerializeField] float maxDistance = 3f;
 
-    TempParent tempParent;
-    Rigidbody rb;
+    private bool isHolding = false;
 
-    Vector3 objectPos;
+    private TempParent tempParent;
+    private Rigidbody rb;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    private Vector3 lastHeldPosition;
+    private Vector3 holdVelocity;
+
+    private void Start()
     {
         rb = GetComponent<Rigidbody>();
-        tempParent = TempParent.Instance;
-        Debug.Log(tempParent);
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
         if (isHolding)
-        {
             Hold();
-        }
     }
 
-    private void OnMouseDown()
+    public bool TryPickup(TempParent playerTempParent)
     {
-        if (tempParent != null)
-        {
-            distance = Vector3.Distance(this.transform.position, tempParent.transform.position);
+        if (isHolding || playerTempParent == null)
+            return false;
 
-            if (distance <= maxDistance)
-            {
-                isHolding = true;
-                rb.isKinematic = true;
-                rb.useGravity = false;
-                rb.detectCollisions = true;
+        tempParent = playerTempParent;
 
-                this.transform.SetParent(tempParent.transform);
+        float distance = Vector3.Distance(
+            transform.position,
+            tempParent.transform.position
+        );
 
-                lastHeldPosition = transform.position;
-                holdVelocity = Vector3.zero;
-            }
-        }
-        else
-        {
-            Debug.Log("temp parent not found in scene");
-        }
-    }
+        if (distance > maxDistance)
+            return false;
 
-    private void OnMouseUp()
-    {
-        Drop();
+        isHolding = true;
+
+        rb.isKinematic = true;
+        rb.useGravity = false;
+        rb.detectCollisions = true;
+
+        transform.SetParent(tempParent.transform);
+
+        lastHeldPosition = transform.position;
+        holdVelocity = Vector3.zero;
+
+        return true;
     }
 
     private void Hold()
     {
-        distance = Vector3.Distance(this.transform.position, tempParent.transform.position);
+        float distance = Vector3.Distance(
+            transform.position,
+            tempParent.transform.position
+        );
 
         if (distance > maxDistance)
-        {
             Drop();
-        }
-
-        if (Input.GetMouseButtonDown(1))
-        {
-            Drop();
-            rb.AddForce(tempParent.transform.forward * throwForce, ForceMode.Impulse);
-        }
     }
 
-    private void Drop()
+    public void Drop()
     {
+        if (!isHolding)
+            return;
 
-        if (isHolding)
-        {
-            isHolding = false;
-            this.transform.SetParent(null);
-            rb.isKinematic = false;
-            rb.useGravity = true;
-            rb.linearVelocity = holdVelocity * velocityMultiplier;
-        }
+        isHolding = false;
+
+        transform.SetParent(null);
+
+        rb.isKinematic = false;
+        rb.useGravity = true;
+        rb.linearVelocity = holdVelocity * velocityMultiplier;
+    }
+
+    public void Throw(Vector3 direction)
+    {
+        if (!isHolding)
+            return;
+
+        Drop();
+
+        rb.AddForce(direction * throwForce, ForceMode.Impulse);
     }
 
     private void LateUpdate()
     {
-        if (isHolding)
-        {
-            holdVelocity = (transform.position - lastHeldPosition) / Time.deltaTime;
-            holdVelocity = Vector3.ClampMagnitude(holdVelocity, maxThrowVelocity);
+        if (!isHolding)
+            return;
 
-            lastHeldPosition = transform.position;
-        }
+        holdVelocity = (transform.position - lastHeldPosition)
+            / Time.deltaTime;
+
+        holdVelocity = Vector3.ClampMagnitude(
+            holdVelocity,
+            maxThrowVelocity
+        );
+
+        lastHeldPosition = transform.position;
     }
 }
